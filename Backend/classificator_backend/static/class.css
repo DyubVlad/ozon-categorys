@@ -1,0 +1,72 @@
+.body-style {
+    background-color: #fcfcfc;
+}
+
+.classifier_res {
+    visibility: hidden;
+    margin-top: 15px;
+    }
+
+.btn {
+    margin-top: 1%;
+}
+
+.form-control {
+    margin-top: 1%;
+}
+
+details summary {
+  display: block;  /* у summary по умолчанию свойство display в значении list-item, потому поддерживается свойство list-style */
+  width: 10em;
+  width: -webkit-fit-content;
+  width: -moz-fit-content;
+  width: fit-content;  /*  блок раскрывается при щелчке по кнопке, а не по всей строке */
+  border-bottom: 1px dotted;  /* подводка точками или тире часто используется для элементов, с которыми пользователю предлагается взаимодействовать, можно заменить на text-decoration */
+  outline-style: none;  /* удалить обводку при фокусе */
+  cursor: pointer;
+  font: 12pt sans-serif;
+}
+details summary::-webkit-details-marker {  /* нестандартный псевдоэлемент Google Chrome */
+  display: none;
+}
+
+.col-8 {
+    background-color: #f7f7f7;
+}
+
+td-title {
+    width: 70%;
+}
+
+td-category {
+   width: 30%;
+}
+
+details summary::-webkit-details-marker {
+  display: none
+}
+
+details > summary {
+  list-style: none;
+}
+
+details[open] .modal {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.modal.show {
+  display: block;
+}
+
+.sum-block {
+    margin-top: 2%;
+    box-sizing: border-box;
+    padding: 10px;
+    background-color: #fafafa;
+    text-align: justify;
+
+}
+
+.page-link {
+    cursor: pointer;
+}

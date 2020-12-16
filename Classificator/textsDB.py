@@ -18,12 +18,13 @@ from tensorflow.keras import utils
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import pickle
 
 
 class TextsData:
     def __init__(self):
         try:
-            self.conn = sqlite3.connect('textsFromOzon.db')
+            self.conn = sqlite3.connect('textsFromOzon_ver0.1.db')
             self.cur = self.conn.cursor()
         except Exception as e:
             print('Error:: ' + str(e))
@@ -100,21 +101,35 @@ class XmlParser:
         self.tagValues = namedtuple('tagValues', 'title, description, category')
 
     def readXml(self, filePath):
+
+        def delPunPunctuationAndInsig(string):
+            string = re.sub(r'[^\w\s]+|[\d]+|км/ч|\b\w{0,2}\b', r'', string)
+            string = re.sub(r'\b\w{0,2}\b', r'', string).strip()
+            return string.lower()
+
         f = open(filePath, encoding='utf-8')
         doc = f.read()
         f.close()
-        soup = bs4.BeautifulSoup(doc, 'lxml')
-        doc = minidom.parse(filePath)
+        soup = bs4.BeautifulSoup(doc, "html.parser")
         try:
             title = soup.doc.title.string
             category = soup.doc.category.string
-            description = soup.doc.text
-            parsRes = self.tagValues(title=title, description=description, category=category)
+            description = soup.find(text=lambda tag: isinstance(tag, bs4.CData)).string
+
+            if (title != None) and (description != None) and (description != '') \
+                    and (category != None):
+                title = delPunPunctuationAndInsig(title)
+                category = soup.doc.category.string.lower().strip()
+                description = description.replace('Описание', "").replace('Показать полностью', "")
+                description = delPunPunctuationAndInsig(description)
+                parsRes = self.tagValues(title=title, description=description, category=category)
+                return parsRes
+            else:
+                return None
         except Exception as e:
-            print(title + '\n' + category + '\n' + description)
             print('Error:: ' + str(e))
             traceback.print_exc(file=sys.stdout)
-        return parsRes
+
 
 
 class Classificator(TextsData):
@@ -122,9 +137,11 @@ class Classificator(TextsData):
         super(Classificator, self).__init__()
         self.trainFrame = pd.DataFrame(None, None)
         self.testFrame = pd.DataFrame(None, None)
-        self.numWords = 15000   # кол-во слов для токенизатора
-        self.maxTextLen = 100   # максимальная длинна текста
+        self.numWords = 30000   # кол-во слов для токенизатора
+        self.maxTextLen = 30   # максимальная длинна текста
         self.classCount = 9     # кол-во классов
+        self.modelCnnSavePath = 'best_model_cnn_ver0.2.h5'     # файл модели
+        self.tokenizatorPath = 'tokenizer_ver0.2.pickle'       # файл токенизатора
 
     def getTrainAndTestLists(self):
         trainList = []
@@ -152,15 +169,18 @@ class Classificator(TextsData):
     def trainClassificator(self):
         yTrain = utils.to_categorical(self.trainFrame['class'] - 1, self.classCount)
         tokenizer = Tokenizer(num_words=self.numWords)
-        tokenizer.fit_on_texts(self.trainFrame['text'])
-        sequences = tokenizer.texts_to_sequences(self.trainFrame['text'])
+
+        tokenizer.fit_on_texts(self.trainFrame['title'])
+        with open(self.tokenizatorPath, 'wb') as handle:
+            pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        sequences = tokenizer.texts_to_sequences(self.trainFrame['title'])
         xTrain = pad_sequences(sequences, maxlen=self.maxTextLen)
 
         model_cnn = Sequential()
         model_cnn.add(Embedding(self.numWords, 32, input_length=self.maxTextLen))
         model_cnn.add(Conv1D(250, 5, padding='valid', activation='relu'))
         model_cnn.add(GlobalMaxPooling1D())
-        model_cnn.add(Dense(128, activation='relu'))
+        model_cnn.add(Dense(1128, activation='relu'))
         model_cnn.add(Dense(9, activation='softmax'))
 
         model_cnn.compile(optimizer='adam',
@@ -169,16 +189,16 @@ class Classificator(TextsData):
 
         model_cnn.summary()
 
-        model_cnn_save_path = 'best_model_cnn.h5'
-        checkpoint_callback_cnn = ModelCheckpoint(model_cnn_save_path,
+
+        checkpoint_callback_cnn = ModelCheckpoint(self.modelCnnSavePath,
                                                   monitor='val_accuracy',
                                                   save_best_only=True,
                                                   verbose=1)
 
         history_cnn = model_cnn.fit(xTrain,
                                     yTrain,
-                                    epochs=20,
-                                    batch_size=880,
+                                    epochs=50,
+                                    batch_size=500,
                                     validation_split=0.1,
                                     callbacks=[checkpoint_callback_cnn])
 
@@ -191,16 +211,37 @@ class Classificator(TextsData):
         plt.legend()
         plt.show()
 
-        test_sequences = tokenizer.texts_to_sequences(self.testFrame['text'])
+        test_sequences = tokenizer.texts_to_sequences(self.testFrame['title'])
         xTest = pad_sequences(test_sequences, maxlen=self.maxTextLen)
         yTest = utils.to_categorical(self.testFrame['class'] - 1, self.classCount)
-        model_cnn.load_weights(model_cnn_save_path)
+        model_cnn.load_weights(self.modelCnnSavePath)
         model_cnn.evaluate(xTest, yTest, verbose=1)
-        print()
 
-    def run(self):
+    def runTrain(self):
         self.getTrainAndTestLists()
         self.trainClassificator()
+
+    def getTextClass(self, text):
+        textList = []
+        textList.append(text)
+        model = Sequential()
+        model.add(Embedding(self.numWords, 32, input_length=self.maxTextLen))
+        model.add(Conv1D(250, 5, padding='valid', activation='relu'))
+        model.add(GlobalMaxPooling1D())
+        model.add(Dense(1128, activation='relu'))
+        model.add(Dense(9, activation='softmax'))
+
+        model.compile(optimizer='adam',
+                          loss='categorical_crossentropy',
+                          metrics=['accuracy'])
+
+        model.load_weights(self.modelCnnSavePath)
+        with open(self.tokenizatorPath, 'rb') as handle:
+            tokenizer = pickle.load(handle)
+        inputSequence = tokenizer.texts_to_sequences(textList)
+        prepSequence = pad_sequences(inputSequence, maxlen=self.maxTextLen)
+        prediction = model.predict(prepSequence)
+        return np.argmax(prediction)+1
 
 
 def runDbInserts(db, xmlReader, xmlFolder):
@@ -209,18 +250,22 @@ def runDbInserts(db, xmlReader, xmlFolder):
             if db.checkClass(re.match('[аА-яЯ\s]+', file.lower()).group().strip()):
                 curRoute = os.path.join(root, file)
                 parsRes = xmlReader.readXml(curRoute)
-                if (parsRes.title != None) and (parsRes.description != None) and (parsRes.category != None):
-                    db.goodsInsert(parsRes.title.strip(), parsRes.description.strip(), parsRes.category.lower().strip())
+                if parsRes != None:
+                    if parsRes.description != '':
+                        db.goodsInsert(parsRes.title.strip(), parsRes.description.strip(), parsRes.category.lower().strip())
 
 
 
 db = TextsData()
 xmlReader = XmlParser()
-dataPrepare = Classificator().run()
-#dataPrepare.getTrainAndTestLists()
-xmlFolder = 'C:\\Users\\Vlad\\PycharmProjects\\ozon-categorys\\textsWithDescription'
+
+dataPrepare = Classificator().runTrain()
+
+#xmlFolder = 'C:\\Users\\Vlad\\PycharmProjects\\ozon-categorys\\textsWithDescription'
 #runDbInserts(db, xmlReader, xmlFolder)
-#db.statistics()
+#print(db.statistics())
+
+
 
 
 
