@@ -1,23 +1,31 @@
 import tensorflow as tf
+from django.conf import settings
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Embedding, Conv1D, GlobalMaxPooling1D
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import numpy as np
 import pickle
 import re
+import os
+from tensorflow.python.client import device_lib
 
-config = tf.compat.v1.ConfigProto(gpu_options=tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.8))
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+print(device_lib.list_local_devices())
+
+config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
 session = tf.compat.v1.Session(config=config)
 tf.compat.v1.keras.backend.set_session(session)
 
-
 class ClassificationPredictor:
+    """Класс классификатора"""
+
     def __init__(self):
         self.numWords = 30000
         self.maxTextLen = 30
-        self.modelCnnSavePath = 'C://Users//Vlad//PycharmProjects//ozon-categorys//Classificator//best_model_cnn_ver0.2.h5'
-        self.tokenizatorPath = 'C://Users//Vlad//PycharmProjects//ozon-categorys//Classificator//tokenizer_ver0.2.pickle'
+        self.modelCnnSavePath = settings.PATH_TO_MODEL
+        self.tokenizatorPath = settings.PATH_TO_TOKENIZATOR
 
         self.model = Sequential()
         self.model.add(Embedding(self.numWords, 32, input_length=self.maxTextLen))
@@ -35,17 +43,20 @@ class ClassificationPredictor:
             self.tokenizer = pickle.load(handle)
 
     def getTextClass(self, text):
+        """Возвращает int результат классификации для передаваемого текста"""
         textList = []
-        text = self.delPunPunctuationAndInsig(text)
+        text = self.delPunctuationAndInsig(text)
         textList.append(text)
         inputSequence = self.tokenizer.texts_to_sequences(textList)
         prepSequence = pad_sequences(inputSequence, maxlen=self.maxTextLen)
         prediction = self.model.predict(prepSequence)
         return np.argmax(prediction) + 1
 
-    def delPunPunctuationAndInsig(self, string):
-        string = re.sub(r'[^\w\s]+|[\d]+|км/ч|\b\w{0,2}\b', r'', string)
-        string = re.sub(r'\b\w{0,2}\b', r'', string).strip()
+    def delPunctuationAndInsig(self, string):
+        """Обабатывает входной текст - удаляет незначимые символы и слова"""
+        string = re.sub(r'[^\w\s]+|[\d]+|км/ч|\b\w{0,2}\b', r' ', string)
+        string = re.sub(r'\b\w{0,2}\b', r'', string)
+        string = re.sub(r'\b\s+\b', r' ', string.strip())
         return string.lower()
 
 

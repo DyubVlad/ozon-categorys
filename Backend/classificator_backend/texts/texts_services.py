@@ -4,25 +4,30 @@ from rest_framework.exceptions import NotFound as NotFoundError
 from .models import Categorylist, Goods
 from rest_framework.response import Response
 
-def getClassNameById(classId):
-    className = Categorylist.objects.get(categoryid=classId)
-    return className.categoryname
-
 
 class TextServices:
 
     def getClassList(self):
+        """Возвращает полный список категорий из БД"""
         return Categorylist.objects.all()
 
     def getAllTexts(self):
+        """Возвращает полный список объектов в таблице Goods - все товары в БД"""
         return Goods.objects.select_related()
 
     def getAllTextsByClass(self, category):
+        """Возвращает все объекты из таблицы Goods для указанного id категории"""
         return Goods.objects.filter(categoryid=category)
+
+    def getClassNameById(self, classId):
+        """Возвращает название категории по её id"""
+        className = Categorylist.objects.get(categoryid=classId)
+        return className.categoryname
 
 
 class CustomPaginator(PageNumberPagination):
-    page_size = 10 # Number of objects to return in one page
+    """Пагинатор из библиотеки DRF адаптированный для APIVew"""
+    page_size = 10      # Кол-во объектов на одной странице
 
     def generate_response(self, query_set, serializer_obj, request):
         try:

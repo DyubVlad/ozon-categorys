@@ -29,11 +29,25 @@
                 <textarea class="form-control" v-model.lazy="text"  placeholder="Введите наименование товара, для которого необходимо определеить категорию" rows="3"></textarea>
                 <div class="d-grid gap-1">
                     <button v-on:click="getClass" type="button" class="btn btn-outline-success">Классифицировать</button>
-
                 </div>
-                <div class="classifier_res" v-bind:class="{ hidden: hActive, visible: vActive}">
-                    <div class="alert alert-secondary">
-                        <span >Товара с наименованием {{ text }} модель отнеса к классу <b>{{ classifier_result }}</b></span>
+
+                <div v-if="loading">
+                    <div class="classifier_res" v-bind:class="{ hidden: hActive, visible: vActive}">
+                        <div class="alert alert-secondary">
+                            <div class="d-flex justify-content-center">
+                                <div class="spinner-border text-success" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-else-if="!loading">
+                    <div class="classifier_res" v-bind:class="{ hidden: hActive, visible: vActive}">
+                        <div class="alert alert-secondary">
+                            <span>Товара с наименованием "{{ text }}" модель отнеса к классу <b>{{ classifier_result }}</b></span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -48,7 +62,7 @@
             {% verbatim %}
                 <select id="list_of_classes" class="form-select" aria-label="Default select example" v-model="checkedClass" v-on:click="updateTable">
                     <option :value="0" selected>Список классов</option>
-                    <option  v-for="item in classes" :key="item.categoryname" :value="item.categoryid" >{{ item.categoryname }}</option>
+                    <option  v-for="item in classes" :key="item.categoryname" :value="item.categoryid">{{ item.categoryname }}</option>
                 </select>
             {% endverbatim %}
         </div>

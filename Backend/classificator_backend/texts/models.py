@@ -2,6 +2,7 @@ from django.db import models
 
 
 class Categorylist(models.Model):
+    """Модель, описывающая объект списока категорий, на которые разделены товары"""
     categoryid = models.AutoField(db_column='categoryId', primary_key=True)
     categoryname = models.TextField(db_column='categoryName', unique=True)
 
@@ -10,6 +11,7 @@ class Categorylist(models.Model):
 
 
 class Goods(models.Model):
+    """Модель, описывающая объект товара"""
     itemid = models.AutoField(db_column='itemId', primary_key=True)
     itemtitle = models.TextField(db_column='itemTitle')
     itemdescription = models.TextField(db_column='itemDescription')

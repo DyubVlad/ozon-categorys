@@ -4,11 +4,14 @@ var get_class_app = new Vue({
         text: '',
         classifier_result: '',
         vActive: false,
-        hActive: true
+        hActive: true,
+        loading: false,
     },
   methods: {
     getClass: function () {
       const vm = this
+      vm.loading = true
+      console.log(vm.loading)
       axios.get('api/model/?text=' + this.text)
       .then(function(response){
       if (response.status == 200){
@@ -16,7 +19,8 @@ var get_class_app = new Vue({
         vm.classifier_result = response.data
         vm.vActive = true
         vm.hActive = false
-      } else if (response.status == 204){
+        vm.loading = false
+      } else if (response.status == 204 || text == ''){
         vm.vActive = false
         vm.hActive = true
         alert('Получена ошибка 204: передано пустое поле с текстом')
@@ -25,6 +29,7 @@ var get_class_app = new Vue({
     }
   }
 })
+
 
 var list_of_classes = new Vue({
     el: '#list_of_classes',
@@ -46,7 +51,6 @@ var list_of_classes = new Vue({
     }
   }
 })
-
 
 
 var tableRender = new Vue({
@@ -108,3 +112,5 @@ var curPage = new Vue({
         },
     }
 })
+
+

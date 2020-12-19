@@ -20,12 +20,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
+
 SECRET_KEY = 'h^!8*mp#uo%jcu6g8la5of6gj1j35j#^!p!odmr3+0#trnnhbl'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -102,10 +103,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-REST_FRAMEWORK = {
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 50
-}
+FIXTURE_DIRS = [
+    os.path.join(BASE_DIR, 'fixtures'),
+]
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
@@ -128,4 +128,5 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS =[os.path.join(BASE_DIR, 'static')]
 
 
-FOLDER_WITH_XML = 'C:\\Users\\Vlad\\PycharmProjects\\ozon-categorys\\textsWithDescription'
+PATH_TO_MODEL = os.path.join(BASE_DIR, 'best_model_cnn_ver0.2.h5')
+PATH_TO_TOKENIZATOR = os.path.join(BASE_DIR, 'tokenizer_ver0.2.pickle')

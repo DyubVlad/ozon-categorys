@@ -1,16 +1,14 @@
 import sqlite3
-from xml.dom import minidom
 import traceback
 import sys
 import os
 import re
 from collections import namedtuple
 import bs4
-import lxml
+
 
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Embedding, MaxPooling1D, Conv1D, GlobalMaxPooling1D, Dropout, LSTM, GRU
-from tensorflow.keras import utils
+from tensorflow.keras.layers import Dense, Embedding, Conv1D, GlobalMaxPooling1D
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.callbacks import ModelCheckpoint
@@ -103,8 +101,9 @@ class XmlParser:
     def readXml(self, filePath):
 
         def delPunPunctuationAndInsig(string):
-            string = re.sub(r'[^\w\s]+|[\d]+|км/ч|\b\w{0,2}\b', r'', string)
-            string = re.sub(r'\b\w{0,2}\b', r'', string).strip()
+            string = re.sub(r'[^\w\s]+|[\d]+|км/ч|\b\w{0,2}\b', r' ', string)
+            string = re.sub(r'\b\w{0,2}\b', r'', string)
+            string = re.sub(r'\b\s+\b', r' ', string.strip())
             return string.lower()
 
         f = open(filePath, encoding='utf-8')
@@ -197,8 +196,8 @@ class Classificator(TextsData):
 
         history_cnn = model_cnn.fit(xTrain,
                                     yTrain,
-                                    epochs=50,
-                                    batch_size=500,
+                                    epochs=30,
+                                    batch_size=900,
                                     validation_split=0.1,
                                     callbacks=[checkpoint_callback_cnn])
 
@@ -256,14 +255,16 @@ def runDbInserts(db, xmlReader, xmlFolder):
 
 
 
-db = TextsData()
-xmlReader = XmlParser()
+def chengeData():
+    db = TextsData()
+    xmlReader = XmlParser()
+    xmlFolder = 'C:\\Users\\Vlad\\PycharmProjects\\ozon-categorys\\textsWithDescription'
+    runDbInserts(db, xmlReader, xmlFolder)
 
-dataPrepare = Classificator().runTrain()
+def trainModel():
+    dataPrepare = Classificator().runTrain()
 
-#xmlFolder = 'C:\\Users\\Vlad\\PycharmProjects\\ozon-categorys\\textsWithDescription'
-#runDbInserts(db, xmlReader, xmlFolder)
-#print(db.statistics())
+
 
 
 
